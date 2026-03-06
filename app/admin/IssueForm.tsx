@@ -311,11 +311,21 @@ export default function IssueForm({ adminKey }: Props) {
             {csvUrl ? (
               <div style={{ marginTop: 8 }}>
                 <button
-                  href={`${csvUrl}${
-                    csvUrl.includes("?") ? "&" : "?"
-                  }key=${encodeURIComponent(adminKey)}`}
-                  target="_blank"
-                  rel="noreferrer"
+                  type="button"
+      onClick={() => {
+        const url = `${csvUrl}${
+          csvUrl.includes("?") ? "&" : "?"
+        }key=${encodeURIComponent(adminKey)}`;
+        window.location.href = url;
+      }}
+      style={{
+        border: "1px solid #d1d5db",
+        padding: "10px 14px",
+        borderRadius: 10,
+        background: "#fff",
+        cursor: "pointer",
+        fontWeight: 700,
+      }}
                 >
                   CSVをダウンロード
                 </button>
