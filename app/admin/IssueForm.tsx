@@ -162,7 +162,9 @@ export default function IssueForm({ adminKey }: Props) {
                 }}
               >
                 <div>
-                  <div style={{ marginBottom: 4, fontSize: 13, fontWeight: 700 }}>
+                  <div
+                    style={{ marginBottom: 4, fontSize: 13, fontWeight: 700 }}
+                  >
                     種別
                   </div>
                   <select
@@ -181,7 +183,9 @@ export default function IssueForm({ adminKey }: Props) {
                 </div>
 
                 <div>
-                  <div style={{ marginBottom: 4, fontSize: 13, fontWeight: 700 }}>
+                  <div
+                    style={{ marginBottom: 4, fontSize: 13, fontWeight: 700 }}
+                  >
                     ラベル
                   </div>
                   <input
@@ -196,7 +200,9 @@ export default function IssueForm({ adminKey }: Props) {
                 </div>
 
                 <div>
-                  <div style={{ marginBottom: 4, fontSize: 13, fontWeight: 700 }}>
+                  <div
+                    style={{ marginBottom: 4, fontSize: 13, fontWeight: 700 }}
+                  >
                     本数
                   </div>
                   <input
@@ -303,16 +309,20 @@ export default function IssueForm({ adminKey }: Props) {
             ) : null}
 
             {csvUrl ? (
-  <div style={{ marginTop: 8 }}>
-    <a
-      href={`${csvUrl}${csvUrl.includes("?") ? "&" : "?"}key=${encodeURIComponent(adminKey)}`}
-      target="_blank"
-      rel="noreferrer"
-    >
-      CSVをダウンロード
-    </a>
-  </div>
-) : null}
+              <div style={{ marginTop: 8 }}>
+                <a
+                  href={`${csvUrl}${
+                    csvUrl.includes("?") ? "&" : "?"
+                  }key=${encodeURIComponent(adminKey)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  CSVをダウンロード
+                </a>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </form>
   );
