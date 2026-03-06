@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
       token_hash: sha256Hex(item.token),
       result: item.result,
       prize_type: item.prize_type,
-      status: "null",
+      status: "unused",
       claimed_at: null,
     }));
 
