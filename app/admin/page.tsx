@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import IssueForm from "./IssueForm";
 
 type TicketRow = {
   batch_id: string | null;
@@ -96,6 +97,11 @@ export default async function AdminPage(props: {
   return (
     <div style={{ padding: 24 }}>
       <h1>Admin</h1>
+
+       <section style={{ marginTop: 24 }}>
+        <h2>ロット発行</h2>
+      <IssueForm adminKey={key!} />
+      </section>
 
       <section style={{ marginTop: 24 }}>
         <h2>ロット一覧</h2>
