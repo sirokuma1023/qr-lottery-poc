@@ -1,6 +1,7 @@
 type Props = {
   status: "win" | "lose" | "claimed" | "invalid";
   prizeType?: string | null;
+  token?: string;
 };
 
 function getConfig(status: Props["status"], prizeType?: string | null) {
@@ -10,8 +11,8 @@ function getConfig(status: Props["status"], prizeType?: string | null) {
         badge: "当たり",
         title: "おめでとうございます",
         message: prizeType
-          ? `景品：${prizeType} をお受け取りください。`
-          : "当たりです。スタッフへ画面をご提示ください。",
+          ? `景品：${prizeType} が当たりました。`
+          : "当たりです。",
         emoji: "🎉",
       };
     case "lose":
@@ -24,7 +25,7 @@ function getConfig(status: Props["status"], prizeType?: string | null) {
     case "claimed":
       return {
         badge: "引換済み",
-        title: "このQRはすでに引換済みです",
+        title: "このQRは引換済みです",
         message: "前回の結果を再表示しています。",
         emoji: "✅",
       };
@@ -39,7 +40,7 @@ function getConfig(status: Props["status"], prizeType?: string | null) {
   }
 }
 
-export default function ResultCard({ status, prizeType }: Props) {
+export default function ResultCard({ status, prizeType, token }: Props) {
   const c = getConfig(status, prizeType);
 
   return (
@@ -48,8 +49,7 @@ export default function ResultCard({ status, prizeType }: Props) {
         minHeight: "100dvh",
         display: "grid",
         placeItems: "center",
-        background:
-          "linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%)",
+        background: "linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%)",
         padding: 24,
       }}
     >
@@ -130,6 +130,28 @@ export default function ResultCard({ status, prizeType }: Props) {
           >
             景品：{prizeType}
           </div>
+        ) : null}
+
+        {status === "win" && token ? (
+          <form method="post" action="/api/claim" style={{ marginTop: 20 }}>
+            <input type="hidden" name="token" value={token} />
+            <button
+              type="submit"
+              style={{
+                width: "100%",
+                border: 0,
+                borderRadius: 16,
+                padding: "14px 16px",
+                background: "#111827",
+                color: "#ffffff",
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              スタッフ確認で引換を確定する
+            </button>
+          </form>
         ) : null}
 
         <div

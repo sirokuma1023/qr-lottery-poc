@@ -49,23 +49,8 @@ export default async function Page({ params }: PageProps) {
     );
   }
 
-  const now = new Date().toISOString();
-
-  const { error: updateError } = await supabaseAdmin
-    .from("tickets")
-    .update({
-      status: "claimed",
-      claimed_at: now,
-    })
-    .eq("id", ticket.id)
-    .is("claimed_at", null);
-
-  if (updateError) {
-    return <ResultCard status="invalid" />;
-  }
-
   if (ticket.result === "win") {
-    return <ResultCard status="win" prizeType={ticket.prize_type} />;
+    return <ResultCard status="win" prizeType={ticket.prize_type} token={token} />;
   }
 
   return <ResultCard status="lose" />;
