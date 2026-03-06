@@ -6,7 +6,6 @@ function isAuthorized(req: NextRequest) {
   if (!adminKey) return false;
 
   const queryKey = req.nextUrl.searchParams.get("key");
-
   return queryKey === adminKey;
 }
 
@@ -50,9 +49,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const rows = data ?? [];
-
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL || req.nextUrl.origin;
 
     const header = [
       "batch_id",
@@ -68,9 +66,8 @@ export async function GET(req: NextRequest) {
 
     const lines = [
       header.join(","),
-      ...rows.map((row) => {
+      ...(data ?? []).map((row) => {
         const qrUrl = `${baseUrl}/q/${row.token}`;
-
         return [
           csvEscape(row.batch_id),
           csvEscape(row.issued_at),
@@ -87,10 +84,14 @@ export async function GET(req: NextRequest) {
 
     const csv = "\uFEFF" + lines.join("\r\n");
 
-    return new NextResponse(csv, {
+    return new Response(csv, {
+      status: 200,
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="tickets_${batchId}.csv"`,
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
       },
     });
   } catch (err) {
