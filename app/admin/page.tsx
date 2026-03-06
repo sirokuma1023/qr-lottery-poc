@@ -11,7 +11,6 @@ export default async function AdminPage(props: {
       <div style={{ padding: 24 }}>
         <h1>Admin</h1>
         <div>key が違います</div>
-        <div>例: /admin?key=YOUR_KEY</div>
       </div>
     );
   }
@@ -54,35 +53,20 @@ export default async function AdminPage(props: {
     <div style={{ padding: 24 }}>
       <h1>Admin</h1>
 
+      {/* 新フォーム */}
       <h2 style={{ marginTop: 24 }}>ロット発行</h2>
       <IssueForm adminKey={key} />
 
       <h2 style={{ marginTop: 40 }}>ロット一覧</h2>
 
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          marginTop: 16,
-        }}
-      >
+      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 16 }}>
         <thead>
           <tr>
-            <th style={{ borderBottom: "1px solid #ccc", padding: 8 }}>
-              発行日時
-            </th>
-            <th style={{ borderBottom: "1px solid #ccc", padding: 8 }}>
-              batch_id
-            </th>
-            <th style={{ borderBottom: "1px solid #ccc", padding: 8 }}>
-              枚数
-            </th>
-            <th style={{ borderBottom: "1px solid #ccc", padding: 8 }}>
-              当たり
-            </th>
-            <th style={{ borderBottom: "1px solid #ccc", padding: 8 }}>
-              CSV
-            </th>
+            <th style={{ borderBottom: "1px solid #ccc", padding: 8 }}>発行日時</th>
+            <th style={{ borderBottom: "1px solid #ccc", padding: 8 }}>batch_id</th>
+            <th style={{ borderBottom: "1px solid #ccc", padding: 8 }}>枚数</th>
+            <th style={{ borderBottom: "1px solid #ccc", padding: 8 }}>当たり</th>
+            <th style={{ borderBottom: "1px solid #ccc", padding: 8 }}>CSV</th>
           </tr>
         </thead>
         <tbody>
@@ -94,9 +78,7 @@ export default async function AdminPage(props: {
               <td style={{ padding: 8 }}>{r.wins}</td>
               <td style={{ padding: 8 }}>
                 <a
-                  href={`/api/admin/csv?batch_id=${r.batch_id}&key=${encodeURIComponent(
-                    key
-                  )}`}
+                  href={`/api/admin/csv?batch_id=${r.batch_id}&key=${encodeURIComponent(key)}`}
                   target="_blank"
                   rel="noreferrer"
                 >
