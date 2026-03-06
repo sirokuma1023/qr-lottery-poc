@@ -310,7 +310,7 @@ export default function IssueForm({ adminKey }: Props) {
 
             {csvUrl ? (
               <div style={{ marginTop: 8 }}>
-                <a
+                <button
                   href={`${csvUrl}${
                     csvUrl.includes("?") ? "&" : "?"
                   }key=${encodeURIComponent(adminKey)}`}
@@ -318,7 +318,7 @@ export default function IssueForm({ adminKey }: Props) {
                   rel="noreferrer"
                 >
                   CSVをダウンロード
-                </a>
+                </button>
               </div>
             ) : null}
           </div>
