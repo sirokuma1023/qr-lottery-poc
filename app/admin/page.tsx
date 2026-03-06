@@ -21,7 +21,10 @@ export default async function AdminPage(props: {
     .select("batch_id, issued_at, result")
     .order("issued_at", { ascending: false });
 
-  const map = new Map<string, { issued_at: string; total: number; wins: number }>();
+  const map = new Map<
+    string,
+    { issued_at: string; total: number; wins: number }
+  >();
 
   for (const row of data ?? []) {
     const batchId = row.batch_id ?? "";
@@ -65,19 +68,19 @@ export default async function AdminPage(props: {
       >
         <thead>
           <tr>
-            <th style={{ borderBottom: "1px solid #ccc", textAlign: "left", padding: 8 }}>
+            <th style={{ borderBottom: "1px solid #ccc", padding: 8 }}>
               発行日時
             </th>
-            <th style={{ borderBottom: "1px solid #ccc", textAlign: "left", padding: 8 }}>
+            <th style={{ borderBottom: "1px solid #ccc", padding: 8 }}>
               batch_id
             </th>
-            <th style={{ borderBottom: "1px solid #ccc", textAlign: "left", padding: 8 }}>
+            <th style={{ borderBottom: "1px solid #ccc", padding: 8 }}>
               枚数
             </th>
-            <th style={{ borderBottom: "1px solid #ccc", textAlign: "left", padding: 8 }}>
-              当たり数
+            <th style={{ borderBottom: "1px solid #ccc", padding: 8 }}>
+              当たり
             </th>
-            <th style={{ borderBottom: "1px solid #ccc", textAlign: "left", padding: 8 }}>
+            <th style={{ borderBottom: "1px solid #ccc", padding: 8 }}>
               CSV
             </th>
           </tr>
@@ -91,7 +94,9 @@ export default async function AdminPage(props: {
               <td style={{ padding: 8 }}>{r.wins}</td>
               <td style={{ padding: 8 }}>
                 <a
-                  href={`/api/admin/csv?batch_id=${r.batch_id}&key=${encodeURIComponent(key)}`}
+                  href={`/api/admin/csv?batch_id=${r.batch_id}&key=${encodeURIComponent(
+                    key
+                  )}`}
                   target="_blank"
                   rel="noreferrer"
                 >
