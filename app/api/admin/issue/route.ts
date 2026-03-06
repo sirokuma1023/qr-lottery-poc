@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import crypto from "crypto";
 
 type Ok = {
@@ -12,149 +12,116 @@ type Ok = {
 type Ng = {
   ok: false;
   error: string;
-  expectedLen?: number;
-  gotLen?: number;
 };
 
 function sha256Hex(input: string) {
   return crypto.createHash("sha256").update(input, "utf8").digest("hex");
 }
+
 function token20Hex() {
-  return crypto.randomBytes(10).toString("hex"); // 20文字hex
+  return crypto.randomBytes(10).toString("hex");
 }
 
-export async function POST(req: Request) {
+function batchId12Hex() {
+  return crypto.randomBytes(6).toString("hex");
+}
+
+function isAuthorized(req: NextRequest) {
+  const adminKey = process.env.ADMIN_KEY;
+  if (!adminKey) return false;
+
+  const queryKey = req.nextUrl.searchParams.get("key");
+  const headerKey = req.headers.get("x-admin-key");
+  const bearer = req.headers.get("authorization");
+
+  return (
+    queryKey === adminKey ||
+    headerKey === adminKey ||
+    bearer === `Bearer ${adminKey}`
+  );
+}
+
+export async function POST(req: NextRequest) {
   try {
-    const body = await req.json().catch(() => null);
-
-    const key = body?.key;
-    const count = Number(body?.count ?? 0);
-    const winRate = Number(body?.winRate ?? 0); // 0〜1
-    const prizeType = body?.prizeType ?? null;
-    const format = body?.format ?? "json"; // "json" | "csv"
-
-    // --- ADMIN KEY check ---
-    const expected = process.env.ADMIN_KEY ?? "";
-    const got = typeof key === "string" ? key : "";
-
-    if (!expected) {
+    if (!isAuthorized(req)) {
       return NextResponse.json<Ng>(
-        { ok: false, error: "admin_key_missing", expectedLen: 0, gotLen: got.length },
-        { status: 500 }
-      );
-    }
-    if (got !== expected) {
-      return NextResponse.json<Ng>(
-        { ok: false, error: "unauthorized", expectedLen: expected.length, gotLen: got.length },
+        { ok: false, error: "unauthorized" },
         { status: 401 }
       );
     }
-    // --- /ADMIN KEY check ---
 
-    if (!Number.isFinite(count) || count <= 0 || count > 500) {
-      return NextResponse.json<Ng>({ ok: false, error: "invalid_count" }, { status: 400 });
+    const body = await req.json().catch(() => null);
+
+    const count = Number(body?.count ?? 0);
+    const winCount = Number(body?.winCount ?? 0);
+    const prizeType =
+      typeof body?.prizeType === "string" && body.prizeType.trim()
+        ? body.prizeType.trim()
+        : null;
+
+    if (!Number.isInteger(count) || count <= 0) {
+      return NextResponse.json<Ng>(
+        { ok: false, error: "invalid_count" },
+        { status: 400 }
+      );
     }
-    if (!Number.isFinite(winRate) || winRate < 0 || winRate > 1) {
-      return NextResponse.json<Ng>({ ok: false, error: "invalid_winRate" }, { status: 400 });
+
+    if (!Number.isInteger(winCount) || winCount < 0 || winCount > count) {
+      return NextResponse.json<Ng>(
+        { ok: false, error: "invalid_win_count" },
+        { status: 400 }
+      );
     }
 
-    // ロット管理（DBにも保存）
-    const batchId = crypto.randomBytes(6).toString("hex"); // 12文字
-    const issuedAt = new Date().toISOString();
+    const batch_id = batchId12Hex();
+    const issued_at = new Date().toISOString();
 
-    const items: {
-      token: string; // ★ DBにも保存する
-      token_hash: string;
-      status: "unused";
-      result: "win" | "lose";
-      prize_type: string | null;
-      batch_id: string;
-      issued_at: string;
-    }[] = [];
+    const items: { token: string; result: "win" | "lose"; prize_type: string | null }[] = [];
 
     for (let i = 0; i < count; i++) {
-      const token = token20Hex();
-      const result: "win" | "lose" = Math.random() < winRate ? "win" : "lose";
-
       items.push({
-        token,
-        token_hash: sha256Hex(token),
-        status: "unused",
-        result,
-        prize_type: result === "win" ? (typeof prizeType === "string" ? prizeType : null) : null,
-        batch_id: batchId,
-        issued_at: issuedAt,
+        token: token20Hex(),
+        result: i < winCount ? "win" : "lose",
+        prize_type: i < winCount ? prizeType : null,
       });
     }
 
-    // ★ 変更点：tokenもDBに保存する（除外しない）
-    const { error } = await supabaseAdmin.from("tickets").insert(items);
+    // シャッフル
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
+
+    const rows = items.map((item) => ({
+      batch_id,
+      issued_at,
+      token: item.token,
+      token_hash: sha256Hex(item.token),
+      result: item.result,
+      prize_type: item.prize_type,
+      status: "issued",
+      claimed_at: null,
+    }));
+
+    const { error } = await supabaseAdmin.from("tickets").insert(rows);
 
     if (error) {
-      return NextResponse.json<Ng>({ ok: false, error: error.message }, { status: 500 });
+      return NextResponse.json<Ng>(
+        { ok: false, error: error.message },
+        { status: 500 }
+      );
     }
 
-    const payload: Ok = {
+    return NextResponse.json<Ok>({
       ok: true,
-      batch_id: batchId,
-      issued_at: issuedAt,
-      items: items.map((x) => ({ token: x.token, result: x.result, prize_type: x.prize_type })),
-    };
-
-    // CSV返却（現場向け）
-    if (format === "csv") {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_BASE_URL ||
-        (req.headers.get("x-forwarded-host")
-          ? `${req.headers.get("x-forwarded-proto") ?? "http"}://${req.headers.get("x-forwarded-host")}`
-          : `http://${req.headers.get("host")}`);
-
-      const batch_id = payload.batch_id;
-      const issued_at = payload.issued_at;
-
-      const BOM = "\uFEFF";
-      const header = [
-        "batch_id",
-        "issued_at",
-        "token",
-        "token_hash",
-        "print_text",
-        "result",
-        "prize_type",
-      ].join(",");
-
-      const esc = (s: string) => `"${String(s).replace(/"/g, '""')}"`;
-
-      const lines = items.map((x) => {
-        const url = `${baseUrl}/q/${x.token}`;
-        const printText = url; // URLそのまま
-        const prize = x.prize_type ?? "";
-
-        return [
-          esc(batch_id),
-          esc(issued_at),
-          esc(x.token),
-          esc(x.token_hash),
-          esc(printText),
-          esc(x.result),
-          esc(prize),
-        ].join(",");
-      });
-
-      const csv = BOM + [header, ...lines].join("\n");
-
-      return new NextResponse(csv, {
-        status: 200,
-        headers: {
-          "Content-Type": "text/csv; charset=utf-8",
-          "Content-Disposition": `attachment; filename="tickets_${batch_id}.csv"`,
-          "Cache-Control": "no-store",
-        },
-      });
-    }
-
-    return NextResponse.json(payload, { status: 200 });
-  } catch (e: any) {
-    return NextResponse.json<Ng>({ ok: false, error: e?.message ?? "unknown_error" }, { status: 500 });
+      batch_id,
+      issued_at,
+      items,
+    });
+  } catch (e) {
+    return NextResponse.json<Ng>(
+      { ok: false, error: e instanceof Error ? e.message : "unknown_error" },
+      { status: 500 }
+    );
   }
 }
