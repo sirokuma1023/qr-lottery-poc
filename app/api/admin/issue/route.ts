@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => null);
 
     const total = Number(body?.total);
-    const prizes = Array.isArray(body?.prizes) ? body.prizes : [];
+    const prizesRaw = Array.isArray(body?.prizes) ? body.prizes : [];
 
     if (!Number.isInteger(total) || total <= 0) {
       return NextResponse.json(
@@ -54,23 +54,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const normalizedPrizes: PrizeInput[] = prizes.map((p: unknown) => {
-      const row = p as Partial<PrizeInput>;
-      return {
-        type: (row.type ?? "coupon") as PrizeType,
-        label: String(row.label ?? "").trim(),
-        count: Number(row.count ?? 0),
-      };
-    });
+    const prizes: PrizeInput[] = prizesRaw.map((p: any) => ({
+      type: p?.type,
+      label: String(p?.label ?? "").trim(),
+      count: Number(p?.count ?? 0),
+    }));
 
-    if (normalizedPrizes.length === 0) {
+    if (prizes.length === 0) {
       return NextResponse.json(
         { ok: false, error: "prizes_required" },
         { status: 400 }
       );
     }
 
-    const invalidPrize = normalizedPrizes.find(
+    const invalidPrize = prizes.find(
       (p) =>
         !["coupon", "item", "point"].includes(p.type) ||
         !p.label ||
@@ -85,7 +82,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const totalWins = normalizedPrizes.reduce((sum, p) => sum + p.count, 0);
+    const totalWins = prizes.reduce((sum, p) => sum + p.count, 0);
 
     if (totalWins > total) {
       return NextResponse.json(
@@ -97,22 +94,22 @@ export async function POST(req: NextRequest) {
     const batch_id = crypto.randomBytes(6).toString("hex");
     const issued_at = new Date().toISOString();
 
-    const winRows: Array<{
+    const rows: Array<{
       batch_id: string;
       issued_at: string;
       token: string;
       token_hash: string;
-      result: "win";
-      prize_type: PrizeType;
-      prize_label: string;
+      result: "win" | "lose";
+      prize_type: PrizeType | null;
+      prize_label: string | null;
       status: "unused";
       claimed_at: null;
     }> = [];
 
-    for (const prize of normalizedPrizes) {
+    for (const prize of prizes) {
       for (let i = 0; i < prize.count; i++) {
         const token = token20Hex();
-        winRows.push({
+        rows.push({
           batch_id,
           issued_at,
           token,
@@ -128,21 +125,9 @@ export async function POST(req: NextRequest) {
 
     const loseCount = total - totalWins;
 
-    const loseRows: Array<{
-      batch_id: string;
-      issued_at: string;
-      token: string;
-      token_hash: string;
-      result: "lose";
-      prize_type: null;
-      prize_label: null;
-      status: "unused";
-      claimed_at: null;
-    }> = [];
-
     for (let i = 0; i < loseCount; i++) {
       const token = token20Hex();
-      loseRows.push({
+      rows.push({
         batch_id,
         issued_at,
         token,
@@ -154,8 +139,6 @@ export async function POST(req: NextRequest) {
         claimed_at: null,
       });
     }
-
-    const rows = [...winRows, ...loseRows];
 
     for (let i = rows.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
