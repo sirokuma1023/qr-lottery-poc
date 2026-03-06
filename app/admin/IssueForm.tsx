@@ -316,7 +316,7 @@ export default function IssueForm({ adminKey }: Props) {
         const url = `${csvUrl}${
           csvUrl.includes("?") ? "&" : "?"
         }key=${encodeURIComponent(adminKey)}`;
-        window.location.href = url;
+        window.open(url, "_blank");
       }}
       style={{
         border: "1px solid #d1d5db",
