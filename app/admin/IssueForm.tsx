@@ -303,18 +303,16 @@ export default function IssueForm({ adminKey }: Props) {
             ) : null}
 
             {csvUrl ? (
-              <div style={{ marginTop: 8 }}>
-                <a
-                  href={`${csvUrl}?key=${encodeURIComponent(adminKey)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  CSVをダウンロード
-                </a>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
+  <div style={{ marginTop: 8 }}>
+    <a
+      href={`${csvUrl}${csvUrl.includes("?") ? "&" : "?"}key=${encodeURIComponent(adminKey)}`}
+      target="_blank"
+      rel="noreferrer"
+    >
+      CSVをダウンロード
+    </a>
+  </div>
+) : null}
       </div>
     </form>
   );

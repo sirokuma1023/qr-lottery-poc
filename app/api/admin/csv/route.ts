@@ -6,14 +6,8 @@ function isAuthorized(req: NextRequest) {
   if (!adminKey) return false;
 
   const queryKey = req.nextUrl.searchParams.get("key");
-  const headerKey = req.headers.get("x-admin-key");
-  const bearer = req.headers.get("authorization");
 
-  return (
-    queryKey === adminKey ||
-    headerKey === adminKey ||
-    bearer === `Bearer ${adminKey}`
-  );
+  return queryKey === adminKey;
 }
 
 function csvEscape(value: unknown) {
@@ -58,10 +52,13 @@ export async function GET(req: NextRequest) {
 
     const rows = data ?? [];
 
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+
     const header = [
       "batch_id",
       "issued_at",
       "token",
+      "qr_url",
       "result",
       "prize_type",
       "prize_label",
@@ -71,28 +68,29 @@ export async function GET(req: NextRequest) {
 
     const lines = [
       header.join(","),
-      ...rows.map((row) =>
-        [
+      ...rows.map((row) => {
+        const qrUrl = `${baseUrl}/q/${row.token}`;
+
+        return [
           csvEscape(row.batch_id),
           csvEscape(row.issued_at),
           csvEscape(row.token),
+          csvEscape(qrUrl),
           csvEscape(row.result),
           csvEscape(row.prize_type),
           csvEscape(row.prize_label),
           csvEscape(row.status),
           csvEscape(row.claimed_at),
-        ].join(",")
-      ),
+        ].join(",");
+      }),
     ];
 
     const csv = "\uFEFF" + lines.join("\r\n");
 
     return new NextResponse(csv, {
-      status: 200,
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="tickets_${batchId}.csv"`,
-        "Cache-Control": "no-store",
       },
     });
   } catch (err) {
